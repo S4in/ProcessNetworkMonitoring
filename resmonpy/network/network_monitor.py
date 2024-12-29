@@ -58,11 +58,10 @@ class NetworkMonitor:
         return conn_dict
 
     def update(self):
-        with self.lock:
-            self.process_dict = get_pid(list(self.process_dict.values()))
-            if not self.process_dict:
-                self.stop()
-            self.connection_dict = self.get_connections()
+        self.process_dict = get_pid(list(self.process_dict.values()))
+        if not self.process_dict:
+            self.stop()
+        self.connection_dict = self.get_connections()
 
     def packet_callback(self, packet):
         if packet.haslayer(TCP) or packet.haslayer(UDP):
@@ -100,6 +99,7 @@ class NetworkMonitor:
                                          f"{total_bps:.2f}"])
                         data['sent'] = 0
                         data['received'] = 0
+                    self.update()
 
     def start_sniffing(self):
         sniff(filter="tcp or udp", stop_filter=lambda pkt: not self.event.is_set(), prn=self.packet_callback, store=0)
@@ -110,17 +110,13 @@ class NetworkMonitor:
             self.update()
 
     def start_monitoring(self):
-
         sniffer = Thread(target=self.start_sniffing)
         sniffer.daemon = True
         data_handler = Thread(target=self.save_network_usage)
-        updater = Thread(target=self.run_updates)
-        updater.daemon = True
 
         try:
             sniffer.start()
             data_handler.start()
-            updater.start()
             while not self.event.is_set():
                 time.sleep(0.1)
 

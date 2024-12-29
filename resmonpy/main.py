@@ -9,6 +9,8 @@ from resmonpy.utils import is_admin, parse_arguments, verify_processes
 
 
 def main():
+
+    # system info
     if not is_admin():
         print("This script requires administrator privileges. Please run as an administrator.")
         sys.exit(1)
